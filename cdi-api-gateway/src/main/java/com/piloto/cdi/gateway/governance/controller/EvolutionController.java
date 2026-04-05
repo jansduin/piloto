@@ -1,8 +1,11 @@
 package com.piloto.cdi.gateway.governance.controller;
 
 import com.piloto.cdi.gateway.governance.evolution.engine.CognitiveEvolutionEngine;
+import com.piloto.cdi.gateway.governance.evolution.model.BehavioralCell;
+import com.piloto.cdi.gateway.governance.evolution.model.EvolutionVariant;
 import com.piloto.cdi.gateway.governance.evolution.model.OutcomeReport;
 import com.piloto.cdi.gateway.governance.evolution.model.VariantResponse;
+import com.piloto.cdi.kernel.governance.type.PromptLayer;
 import com.piloto.cdi.kernel.command.BaseCommand;
 import com.piloto.cdi.kernel.command.CommandType;
 import com.piloto.cdi.kernel.executive.ExecutionResult;
@@ -109,6 +112,56 @@ public class EvolutionController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             logger.error("Unexpected error processing outcome: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("error", "Internal processing error"));
+        }
+    }
+
+    /**
+     * Register a new prompt variant (seed) for a behavioral cell.
+     * Required to bootstrap the evolution grid before outcomes can be reported.
+     */
+    @PostMapping("/commands/register-variant")
+    public ResponseEntity<?> registerVariant(@RequestBody Map<String, Object> request) {
+        try {
+            String tenantId = (String) request.getOrDefault("tenantId", "default");
+            String promptContent = (String) request.get("promptContent");
+            String intentType = (String) request.get("intentType");
+            String sessionStage = (String) request.get("sessionStage");
+            String layerStr = (String) request.getOrDefault("layer", "RUNTIME");
+
+            if (promptContent == null || promptContent.isBlank())
+                return ResponseEntity.badRequest().body(Map.of("error", "promptContent is required"));
+            if (intentType == null || intentType.isBlank())
+                return ResponseEntity.badRequest().body(Map.of("error", "intentType is required"));
+            if (sessionStage == null || sessionStage.isBlank())
+                return ResponseEntity.badRequest().body(Map.of("error", "sessionStage is required"));
+
+            PromptLayer layer = PromptLayer.valueOf(layerStr.toUpperCase());
+
+            EvolutionVariant variant = EvolutionVariant.builder()
+                    .cell(BehavioralCell.of(intentType, sessionStage))
+                    .layer(layer)
+                    .tenantId(tenantId)
+                    .promptContentSnapshot(promptContent)
+                    .build();
+
+            engine.registerVariant(variant);
+
+            emitAuditEvent(tenantId, "EVOLUTION_VARIANT_REGISTERED",
+                    Map.of("variantId", variant.getId().toString(),
+                            "intentType", intentType,
+                            "sessionStage", sessionStage));
+
+            return ResponseEntity.ok(Map.of(
+                    "status", "registered",
+                    "variantId", variant.getId().toString(),
+                    "cell", intentType + "::" + sessionStage));
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Failed to register variant: {}", e.getMessage(), e);
             return ResponseEntity.internalServerError()
                     .body(Map.of("error", "Internal processing error"));
         }
