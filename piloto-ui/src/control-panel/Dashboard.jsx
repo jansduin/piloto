@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import ExecutionPanel from './ExecutionPanel.jsx'
 import DailyClosing from './DailyClosing.jsx'
-import { Zap, FileText, Brain, Shield, CheckCircle, XCircle, AlertTriangle, Edit3, Save, X, Calendar } from 'lucide-react'
+import EvolutionPanel from './EvolutionPanel.jsx'
+import { Zap, FileText, Brain, Shield, CheckCircle, XCircle, AlertTriangle, Edit3, Save, X, Calendar, Dna } from 'lucide-react'
 import { fetchPrompts, updatePrompt, registerPrompt, fetchMemoryItems, updateMemoryItem, fetchTelemetry, fetchHealth } from '../api/client.js'
 
 export default function Dashboard() {
@@ -26,6 +27,7 @@ export default function Dashboard() {
 
     const tabs = [
         { id: 'execution', label: 'Execution Engine', icon: Zap },
+        { id: 'evolution', label: 'Evolution Grid', icon: Dna },
         { id: 'closing', label: 'Daily Closing', icon: Calendar },
         { id: 'prompts', label: 'Prompt Governance', icon: FileText },
         { id: 'memory', label: 'Domain Memory', icon: Brain },
@@ -55,6 +57,7 @@ export default function Dashboard() {
 
                 <section className="glass-panel dashboard-content">
                     {activeTab === 'execution' && <ExecutionPanel />}
+                    {activeTab === 'evolution' && <EvolutionPanel />}
                     {activeTab === 'closing' && <DailyClosing />}
                     {activeTab === 'prompts' && <PromptView />}
                     {activeTab === 'memory' && <MemoryView />}

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Send, ChevronDown, ChevronRight, CheckCircle, XCircle, AlertTriangle } from 'lucide-react'
+import { Send, ChevronDown, ChevronRight, CheckCircle, XCircle, AlertTriangle, Radio } from 'lucide-react'
 import { sendChatMessage } from './api/client.js'
 import { DEFAULT_TENANT_ID } from './api/config.js'
+import { createDeliberationStream } from './api/deliberationStream.js'
 
 const SESSION_ID = 'session_' + Math.random().toString(36).substring(7);
 
@@ -14,11 +15,29 @@ export default function ChatInterface() {
     const [role, setRole] = useState('chat_agent');
     const [metadata, setMetadata] = useState(null);
     const [trace, setTrace] = useState(null);
+    const [liveStages, setLiveStages] = useState([]);
+    const [wsConnected, setWsConnected] = useState(false);
     const msgRef = useRef(null);
+    const streamRef = useRef(null);
+
+    // WebSocket deliberation stream lifecycle
+    useEffect(() => {
+        const stream = createDeliberationStream(SESSION_ID, (event) => {
+            setLiveStages(prev => [...prev, event]);
+        });
+        stream.start();
+        streamRef.current = stream;
+        // Check connection status after a brief delay
+        const checkTimer = setTimeout(() => setWsConnected(true), 1500);
+        return () => {
+            clearTimeout(checkTimer);
+            stream.stop();
+        };
+    }, []);
 
     useEffect(() => {
         if (msgRef.current) msgRef.current.scrollTop = msgRef.current.scrollHeight;
-    }, [messages, isProcessing]);
+    }, [messages, isProcessing, liveStages]);
 
     const handleSend = async () => {
         const text = inputValue.trim();
@@ -28,6 +47,7 @@ export default function ChatInterface() {
         setInputValue('');
         setIsProcessing(true);
         setTrace(null);
+        setLiveStages([]);
 
         try {
             const data = await sendChatMessage(text, SESSION_ID, { role });
@@ -59,6 +79,13 @@ export default function ChatInterface() {
                     <h3>SESSION</h3>
                     <div className="meta-value" style={{ fontSize: '0.7rem', wordBreak: 'break-all' }}>{SESSION_ID}</div>
                 </section>
+                <section className="sidebar-section">
+                    <h3>STREAM</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.7rem' }}>
+                        <Radio size={10} color={wsConnected ? '#00ff88' : '#f87171'} />
+                        <span style={{ color: wsConnected ? '#00ff88' : '#f87171' }}>{wsConnected ? 'LIVE' : 'OFFLINE'}</span>
+                    </div>
+                </section>
             </aside>
 
             {/* Chat */}
@@ -68,7 +95,19 @@ export default function ChatInterface() {
                         <div key={i} className={`message ${msg.role}`}><p>{msg.content}</p></div>
                     ))}
                     {isProcessing && (
-                        <div className="message system"><p>⚙️ Procesando deliberación...</p></div>
+                        <div className="message system">
+                            <p>⚙️ Procesando deliberación...</p>
+                            {liveStages.length > 0 && (
+                                <div style={{ marginTop: '0.4rem', textAlign: 'left', fontSize: '0.68rem' }}>
+                                    {liveStages.map((s, i) => (
+                                        <div key={i} style={{ display: 'flex', gap: '0.3rem', marginTop: '0.15rem', opacity: 0.85 }}>
+                                            <span style={{ color: stageColor(s.stage) }}>▸ {s.stage}</span>
+                                            <span style={{ color: '#9ea4b0' }}>{s.status}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     )}
                 </div>
                 <footer className="chat-input-area">
@@ -95,12 +134,31 @@ export default function ChatInterface() {
                     <MetaRow label="Mode" value={metadata?.mode} />
                 </section>
                 {trace && <DeliberationTracePanel trace={trace} />}
+                {liveStages.length > 0 && !trace && (
+                    <section className="metadata-section">
+                        <h3>LIVE STAGES</h3>
+                        {liveStages.map((s, i) => (
+                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', marginBottom: '0.3rem' }}>
+                                <span style={{ color: stageColor(s.stage), fontWeight: 600 }}>{s.stage}</span>
+                                <span style={{ color: '#9ea4b0' }}>{s.status}</span>
+                            </div>
+                        ))}
+                    </section>
+                )}
             </aside>
         </div>
     );
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+function stageColor(stage) {
+    const colors = {
+        DELIBERATION: '#60a5fa', PROPOSER: '#60a5fa', CRITIC: '#f472b6',
+        VERIFIER: '#34d399', ARBITER: '#facc15', EXECUTION: '#a78bfa',
+    };
+    return colors[stage?.toUpperCase()] || '#9ea4b0';
+}
+
 function MetaRow({ label, value }) {
     return (
         <div className="metadata-item">

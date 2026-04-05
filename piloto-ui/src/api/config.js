@@ -15,6 +15,13 @@ export const ENDPOINTS = {
     GOV_MEMORY: `${API_BASE_URL}/gov/memory`,
     GOV_TELEMETRY: `${API_BASE_URL}/api/governance/telemetry`,
     GOV_HEALTH: `${API_BASE_URL}/api/governance/health`,
+    DAILY_CLOSING: `${API_BASE_URL}/api/closing/daily`,
+    // Cognitive Evolution Engine (CEE)
+    EVOLUTION_GRID: `${API_BASE_URL}/gov/evolution/grid`,
+    EVOLUTION_VARIANT: `${API_BASE_URL}/gov/evolution/variant`,
+    EVOLUTION_REGISTER: `${API_BASE_URL}/gov/evolution/commands/register-variant`,
+    EVOLUTION_OUTCOME: `${API_BASE_URL}/gov/evolution/commands/report-outcome`,
+    EVOLUTION_OPTIMIZE: `${API_BASE_URL}/gov/evolution/commands/trigger-optimization`,
 };
 
 // Agent definitions removed — PILOTO is a universal execution matrix, not restricted to fixed agents.

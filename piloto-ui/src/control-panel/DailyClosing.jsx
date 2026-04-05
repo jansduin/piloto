@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Calendar, CheckCircle, AlertTriangle } from 'lucide-react';
+import { executeDailyClosing } from '../api/client.js';
 
 export default function DailyClosing() {
     const [status, setStatus] = useState('idle');
@@ -8,12 +9,7 @@ export default function DailyClosing() {
     const runClosing = async () => {
         setStatus('running');
         try {
-            const response = await fetch('http://localhost:8080/api/closing/daily', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tenantId: 'tenant_001' })
-            });
-            const data = await response.json();
+            const data = await executeDailyClosing('tenant_001');
             setResult(data);
             setStatus('success');
         } catch (e) {
