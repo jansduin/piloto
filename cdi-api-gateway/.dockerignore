@@ -1,0 +1,10 @@
+target/
+.mvn/
+*.log
+.DS_Store
+.idea/
+*.iml
+.vscode/
+.piloto-data/
+*.env
+.git/

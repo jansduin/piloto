@@ -1,0 +1,49 @@
+# ═══════════════════════════════════════════════════════════
+# PILOTO F1 — .gitignore
+# ═══════════════════════════════════════════════════════════
+
+# ── Build output ──
+target/
+*.class
+*.jar
+*.war
+
+# ── Maven ──
+.mvn/wrapper/maven-wrapper.jar
+
+# ── IDE ──
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+*.swp
+*~
+
+# ── OS ──
+.DS_Store
+Thumbs.db
+
+# ── Secrets & env ──
+.env
+.env.*
+
+# ── Runtime data ──
+.piloto-data/
+
+# ── Backups (local safety nets) ──
+.backups/
+
+# ── Archive (legacy/deprecated code) ──
+_archive/
+
+# ── Tests (excluidos del repo por directiva) ──
+**/src/test/
+
+# ── Claude/AI workspaces ──
+.claude/
+
+# ── Logs ──
+*.log
+logs/

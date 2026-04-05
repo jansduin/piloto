@@ -1,0 +1,91 @@
+server:
+  address: 0.0.0.0  # Listen on all network interfaces (IPv4 and IPv6)
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: cdi-api-gateway
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: non_null
+
+logging:
+  level:
+    root: INFO
+    com.piloto.cdi.gateway: DEBUG
+    com.piloto.cdi.kernel: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# CORS Configuration (adjust for production)
+cors:
+  allowed-origins: http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000
+  allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+  allowed-headers: "*"
+  allow-credentials: true
+  max-age: 3600
+
+# WebSocket Configuration
+websocket:
+  endpoint: /ws
+  allowed-origins: ${cors.allowed-origins}
+
+# CDI Kernel & LLM Enterprise Configuration
+piloto:
+  llm:
+    enabled: true
+
+    google:
+      enabled: true
+      apiKey: ${GOOGLE_API_KEY} # Securely loaded via environment variable
+      projectId: ${GOOGLE_CLOUD_PROJECT_ID:}
+      location: us-central1
+      models:
+        strategy: gemini-3.1-pro-preview   # Roles pesados: planner, arbiter
+        execution: gemini-2.5-pro          # Roles iterativos: proposer, critic, verifier, chat
+
+    openai:
+      enabled: false
+      apiKey: ${OPENAI_API_KEY:}
+      models:
+        planner: gpt-4o
+
+    ollama:
+      enabled: true
+      baseUrl: ${OLLAMA_BASE_URL:http://localhost:11434}
+      models:
+        fallback: llama3
+
+    role-mapping:
+      planner: google              # gemini-3.1-pro-preview — decisión estratégica
+      arbiter: google              # gemini-3.1-pro-preview — veredicto final
+      chat_agent: google-execution # gemini-2.5-pro — respuesta al usuario
+      validator: google-execution  # gemini-2.5-pro — validación
+      proposer: google-execution   # gemini-2.5-pro — propuesta inicial
+      critic: google-execution     # gemini-2.5-pro — crítica
+      verifier: google-execution   # gemini-2.5-pro — verificación
+      optimizer: google-execution  # gemini-2.5-pro — CEE OPRO + PromptBreeder
+      fallback: ollama
+
+    # Embedding Configuration
+    # GeminiEmbeddingProvider uses gemini-embedding-001 (768 dims).
+    # Requires GOOGLE_API_KEY to be set in environment.
+    # Falls back to deterministic mock vectors when key is absent.
+    embedding:
+      model: gemini-embedding-001
+      dimensions: 768
+
+  # Cognitive Evolution Engine (CEE) — MAP-Elites + OPRO + PromptBreeder
+  evolution:
+    min-samples-to-challenge: 10       # Minimum outcomes before a variant can challenge the champion
+    epsilon-greedy: 0.15               # 15% traffic to challengers for exploration
+    optimizer:
+      cron: "0 0 3 */2 * *"           # Every 48h at 3am
+      min-variants: 3                  # Minimum variants with enough samples to trigger OPRO
+      min-samples-per-variant: 10      # Minimum samples per variant for OPRO history
