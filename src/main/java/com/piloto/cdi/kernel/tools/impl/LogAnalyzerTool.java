@@ -27,7 +27,7 @@ public class LogAnalyzerTool extends BaseTool {
                         "lines", "Integer: Número de líneas a leer desde el final (default: 100)",
                         "filter", "String: Palabra clave para filtrar (ej: 'ERROR', 'EXCEPTION')"),
                 Map.of(
-                        "logs", "String: Contenido de los logs encontradoso",
+                        "logs", "String: Contenido de los logs encontrados",
                         "error_count", "Integer: Número de errores detectados en la muestra"),
                 false // No requiere aprobación humana por ser de lectura y diagnóstico interno
         ));

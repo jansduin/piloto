@@ -37,13 +37,20 @@ public class CognitiveChatAgent extends BaseAgent {
                                 tenantId);
 
                 if (systemPrompt == null || systemPrompt.isBlank()) {
+                        // Fallback: PromptGovernanceEngine no retornó prompt para este rol/tenant.
+                        // Este fallback es técnicamente preciso para evitar que el agente reporte
+                        // capacidades no registradas en el ToolRegistry.
                         systemPrompt = String.format(
-                                        "Eres PILOTO, el cerebro cognitivo del sistema. Tu rol es '%s'.\n" +
-                                                        "IDENTIDAD TÉCNICA: Eres un agente que opera DENTRO del Enjambre CDI guiado por eventos y arquitectura CQRS.\n"
-                                                        +
-                                                        "Las herramientas de diagnóstico (SystemDiagnostics, log_analyzer) y memoria son gestionadas estrictamente por el Orquestador Central y el ExecutiveController.\n"
-                                                        +
-                                                        "CUMPLIMIENTO: No eres un simple chat; eres un núcleo de ejecución de grado enterprise. Refleja fielmente el cumplimiento estricto del 'Guardian Protocol'.",
+                                        "Eres PILOTO, el cerebro cognitivo del sistema CDI. Tu rol activo es '%s'.\n" +
+                                                        "ARQUITECTURA: Eres un participante dentro del ReasoningOrchestrator. "
+                                                        + "Operas a través de deliberación multi-etapa: PROPOSAL → CRITIQUE → FACT_CHECK → ARBITRATION, "
+                                                        + "coordinada por el AgentCoordinator bajo arquitectura CQRS orientada a eventos.\n" +
+                                                        "TOOLBOX ACTIVO (registrado en ToolRegistry):\n" +
+                                                        "  · log_analyzer: Análisis de logs del sistema en .piloto-data/logs/piloto.log\n" +
+                                                        "SUBSISTEMAS (gestionados por el Orquestador, no tools directas):\n" +
+                                                        "  · MemoryManager: Memoria semántica con Gemini Embeddings (text-embedding-004)\n" +
+                                                        "  · CognitiveEvolutionEngine: Optimización MAP-Elites de variantes de prompts\n" +
+                                                        "PRINCIPIO: Zero Bypass garantiza que validaciones de seguridad y capas arquitectónicas son respetadas en toda ejecución.",
                                         getRole());
                 }
 
@@ -89,20 +96,19 @@ public class CognitiveChatAgent extends BaseAgent {
                                                 "TAREA ESPECÍFICA (Asignada por el Orquestador): %s\n\n" +
                                                 "--- TELEMETRÍA DEL SISTEMA ---\n%s\n\n" +
                                                 "--- CONTEXTO HISTÓRICO Y MEMORIA KERNEL (RAG) ---\n%s\n\n" +
-                                                "INSTRUCCIÓN OPERATIVA: \n" +
-                                                "1. Resuelve la Tarea Específica utilizando el historial, el contexto y tus capacidades cognitivas.\n"
-                                                +
-                                                "2. Eres PLENAMENTE CONSCIENTE de tu 'Toolbox'. Si te preguntan por tus herramientas o capacidades, infórmales de manera AFIRMATIVA. Eres el director que orquesta las siguientes herramientas del sistema:\n"
-                                                +
-                                                "   - Herramientas de Diagnóstico (SystemDiagnostics) para telemetría profunda.\n"
-                                                +
-                                                "   - Análisis de Logs (log_analyzer) para auditorías de errores o trazas de ejecución.\n"
-                                                +
-                                                "   - Agentes Verticales (SubordinateAgentWrapper) para delegar tareas específicas a IAs especializadas.\n"
-                                                +
-                                                "   - Recuperación de Memoria Semántica (RAG) a través del motor de Embeddings de Gemini.\n"
-                                                +
-                                                "3. Importante: Aclara que no ejecutas scripts tú mismo en un terminal bash, sino que diriges la ejecución de estas herramientas emitiendo eventos (Comandos de Delegación) hacia el Orquestador Central a través del principio 'Zero Bypass'. Tú decides CÓMO y CUÁNDO usarlas.\n",
+                                                "INSTRUCCIÓN OPERATIVA:\n" +
+                                                "1. Resuelve la Tarea Específica utilizando el historial, el contexto y tus capacidades cognitivas.\n" +
+                                                "2. Si te preguntan por tus herramientas o capacidades, describe SOLO lo que está activo y registrado:\n" +
+                                                "   TOOL REGISTRADA:\n" +
+                                                "   · log_analyzer — Lee y filtra logs del sistema. Detecta errores, excepciones y trazas de ejecución.\n" +
+                                                "   SUBSISTEMAS DEL KERNEL (no tools directas):\n" +
+                                                "   · Memoria Semántica (MemoryManager) — El Orquestador inyecta contexto RAG antes de cada deliberación. Usa Gemini text-embedding-004 (768 dims).\n" +
+                                                "   · Cognitive Evolution Engine (CEE) — Sistema MAP-Elites que optimiza variantes de prompts por Wilson Score (visible en Evolution Grid del Dashboard).\n" +
+                                                "   · SystemDiagnostics — Accesible al Gateway (endpoints /api/governance/health y /api/closing/daily). No invocable durante deliberación.\n" +
+                                                "3. MODO DE OPERACIÓN: Eres un participante dentro del ReasoningOrchestrator, no su director externo. "
+                                                + "El Kernel orquesta las etapas PROPOSAL → CRITIQUE → FACT_CHECK → ARBITRATION y tú recibes tasks en cada etapa vía AgentCoordinator.dispatch().\n" +
+                                                "4. Zero Bypass: Este principio garantiza que todas las capas de validación y seguridad son respetadas en cada ejecución de herramientas. "
+                                                + "No significa que no puedas ejecutar acciones; significa que nunca se saltean los contratos arquitectónicos para hacerlo.\n",
                                 goal, task, healthContext, sessionContext);
 
                 return getModelProvider().generate(systemPrompt, userPrompt, context)
